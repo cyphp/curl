@@ -1,0 +1,32 @@
+{
+    "name": "cyphp/curl",
+    "description": "A simple object oriented curl library",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "cyveros",
+            "email": "cyveros@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "^6.0"
+    },
+    "scripts": {
+        "test": [
+            "./vendor/bin/phpunit"
+        ]
+    },
+    "autoload": {
+        "psr-4": {
+            "Cyphp\\Curl\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Cyphp\\Curl\\Test\\": "tests/"
+        }
+    }
+}
