@@ -67,6 +67,10 @@ class Client
         $headersArr = [];
 
         foreach ($headers as $line) {
+            if (strpos($line, 'HTTP') === 0) {
+                continue;
+            }
+
             list($header, $value) = preg_split('/:\s/', $line, null, PREG_SPLIT_NO_EMPTY);
 
             $headersArr[strtoupper($header)] = trim($value);
