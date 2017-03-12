@@ -3,57 +3,63 @@
 namespace Cyphp\Curl;
 
 use Cyphp\Curl\Resource\ResourceInterface;
+use Cyphp\Curl\Resource\ResourceAwareInterface;
+use Cyphp\Curl\Resource\ResourceConfiguratorInterface;
 use Cyphp\Curl\Http\Request;
 use Cyphp\Curl\Http\Response;
 
-class Client
+class Client implements ResourceAwareInterface
 {
-    protected $cr;
+    protected $resource;
 
-    public function __construct(ResourceInterface $cr = null)
+    public function __construct(ResourceInterface $resource = null)
     {
-        $this->withCurlResource($cr);
+        $this->withResource($resource);
     }
 
-    public function withCurlResource(ResourceInterface $cr = null)
+    public function getResource()
     {
-        $this->cr = $cr;
+        return $this->resource;
+    }
+
+    public function withResource(ResourceInterface $resource = null)
+    {
+        $this->resource = $resource;
+
+        return $this;
+    }
+
+    public function configureResource(callable $configurator)
+    {
+        $configurator($this->resource);
 
         return $this;
     }
 
     public function send(Request $request)
     {
-        $this->cr->withUrl($request->getUri());
+        $this->resource->withUrl($request->getUri());
         $method = $request->getMethod();
 
-        $this->cr
+        $this->resource
             ->withMethod($method)
-            ->withOption(CURLOPT_VERBOSE, false)
-            ->withOption(CURLOPT_RETURNTRANSFER, true)
-            ->withOption(CURLOPT_HEADER, true)
-            ->withOption(CURLOPT_HTTPHEADER, $request->getHeaderLines())
-            ->withOption(CURLOPT_CONNECTTIMEOUT, 2)
-            ->withOption(CURLOPT_TIMEOUT, 12)
-            ->withOption(CURLOPT_SSL_VERIFYPEER, false)
-            ->withOption(CURLOPT_SSL_VERIFYHOST, false)
-            ->withOption(CURLOPT_FOLLOWLOCATION, true);
+            ->withOption(CURLOPT_HTTPHEADER, $request->getHeaderLines());
 
         if ('GET' !== $method) {
-            $this->cr->withOption(CURLOPT_POSTFIELDS, $request->getBody());
+            $this->resource->withOption(CURLOPT_POSTFIELDS, $request->getBody());
         }
 
-        $resp = $this->cr->fetch();
+        $resp = $this->resource->fetch();
 
-        $statusCode = $this->cr->getInfo(CURLINFO_HTTP_CODE);
-        $contentType = $this->cr->getInfo(CURLINFO_CONTENT_TYPE);
+        $statusCode = $this->resource->getInfo(CURLINFO_HTTP_CODE);
+        $contentType = $this->resource->getInfo(CURLINFO_CONTENT_TYPE);
 
-        $headerSize = $this->cr->getInfo(CURLINFO_HEADER_SIZE);
+        $headerSize = $this->resource->getInfo(CURLINFO_HEADER_SIZE);
 
         $headers = substr($resp, 0, $headerSize);
         $body = substr($resp, $headerSize);
 
-        $this->cr->close();
+        $this->resource->close();
 
         return new Response((int) $statusCode, $this->parseHeaders($headers), 'application/json' == $contentType ? json_decode($body, true) : $body);
     }

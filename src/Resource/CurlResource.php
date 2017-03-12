@@ -9,7 +9,7 @@ class CurlResource implements ResourceInterface
 
     public function __construct()
     {
-        $this->handle = curl_init();
+        $this->handle = \curl_init();
 
         if (false === $this->handle) {
             throw new \ErrorException('Fail to initialize cURL session');
