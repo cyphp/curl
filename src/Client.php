@@ -4,17 +4,18 @@ namespace Cyphp\Curl;
 
 use Cyphp\Curl\Resource\ResourceInterface;
 use Cyphp\Curl\Resource\ResourceAwareInterface;
-use Cyphp\Curl\Resource\ResourceConfiguratorInterface;
 use Cyphp\Curl\Http\Request;
 use Cyphp\Curl\Http\Response;
 
 class Client implements ResourceAwareInterface
 {
     protected $resource;
+    protected $baseUrl = null;
 
-    public function __construct(ResourceInterface $resource = null)
+    public function __construct(ResourceInterface $resource = null, array $options = [])
     {
         $this->withResource($resource);
+        $this->withOptions($options);
     }
 
     public function getResource()
@@ -36,9 +37,22 @@ class Client implements ResourceAwareInterface
         return $this;
     }
 
+    public function withOptions(array $options = [])
+    {
+        if (!$options) {
+            return $this;
+        }
+
+        if (isset($options['base_url'])) {
+            $this->baseUrl = rtrim($options['base_url'], '/');
+        }
+
+        return $this;
+    }
+
     public function send(Request $request)
     {
-        $this->resource->withUrl($request->getUri());
+        $this->resource->withUrl($this->makeUrl($request->getUri()));
         $method = $request->getMethod();
 
         $this->resource
@@ -62,6 +76,18 @@ class Client implements ResourceAwareInterface
         $this->resource->close();
 
         return new Response((int) $statusCode, $this->parseHeaders($headers), 'application/json' == $contentType ? json_decode($body, true) : $body);
+    }
+
+    protected function makeUrl(string $uri)
+    {
+        $url = parse_url($uri);
+
+        // when both scheme and host are available, uri is a complete url
+        if (isset($url['scheme']) && isset($url['host'])) {
+            return $uri;
+        }
+
+        return $this->baseUrl.'/'.ltrim($uri, '/');
     }
 
     protected function parseHeaders(string $headers)
